@@ -1,9 +1,14 @@
-function buildChain(text) {
-    var sentences = text.split(/[.?!]+/).map(x => x.replace(/[^a-zA-Z'_ ]/g, " ")).filter(x => x.length > 0);
+function buildChain(text, length) {
+    var sentences = text.split(/[.?!]+/)
+        .map(x => x.replace(/[^a-zA-Z'_ ]/g, " "))
+        .filter(x => x.length > 0);
 
     var chain = { "\n": {} };
     for (let sentence of sentences) {
-        let words = sentence.split(" ").filter(x => x.length > 0);
+        let wordsSingle = sentence.split(" ").filter(x => x.length > 0);
+        let words = [];
+        while (wordsSingle.length > 0)
+            words.push(wordsSingle.splice(0, length).join(" "));
         words.push("\n");
         for (let i = 0; i < words.length - 1; i++) {
             if (i == 0) {
@@ -47,43 +52,49 @@ function getPage(url) {
 }
 
 var poemFunctions = {
-    freeform: function (chain) {
-        function followChain(word, depth) {
-            if (word == "\n" || depth > 100) return word;
-            return word + " " + followChain(randomWeighted(chain[word]), depth + 1);
+    freeform: {
+        length: 2,
+        generate: function (chain) {
+            function followChain(word, depth) {
+                if (word == "\n" || depth > 100) return word;
+                return word + " " + followChain(randomWeighted(chain[word]), depth + 1);
+            }
+            var lines = [];
+            for (let i = 0; i < 10; i++) {
+                lines.push(followChain(randomWeighted(chain["\n"]), 0));
+            }
+            return lines;
         }
-        var lines = [];
-        for (let i = 0; i < 10; i++) {
-            lines.push(followChain(randomWeighted(chain["\n"]), 0));
-        }
-        return lines;
     },
 
-    haiku: function (chain) {
-        function generateLine(syllables, startWord) {
-            if (startWord == null) startWord = "\n";
-            let subchain = {};
-            for (let item in chain[startWord]) {
-                if (findSyllables(item) <= syllables && item != "\n") {
-                    subchain[item] = chain[startWord][item];
+    haiku: {
+        length: 1,
+        generate: function (chain) {
+            function generateLine(syllables, startWord) {
+                if (startWord == null) startWord = "\n";
+                let subchain = {};
+                for (let item in chain[startWord]) {
+                    if (findSyllables(item) <= syllables && item != "\n") {
+                        subchain[item] = chain[startWord][item];
+                    }
+                }
+                if (Object.keys(subchain).length == 0) return null;
+                let word = randomWeighted(subchain);
+                let wordSyllables = findSyllables(word);
+                let next = generateLine(syllables - wordSyllables, word);
+                if (next == null) return null;
+                return word + " " + next;
+            }
+
+            function reallyGenerateLine(syllables) {
+                while (true) {
+                    var item = generateLine(syllables);
+                    if (item != null) return item;
                 }
             }
-            if (Object.keys(subchain).length == 0) return null;
-            let word = randomWeighted(subchain);
-            let wordSyllables = findSyllables(word);
-            let next = generateLine(syllables - wordSyllables, word);
-            if (next == null) return null;
-            return word + " " + next;
-        }
 
-        function reallyGenerateLine(syllables) {
-            while (true) {
-                var item = generateLine(syllables);
-                if (item != null) return item;
-            }
+            return [reallyGenerateLine(5)]; //, reallyGenerateLine(7), reallyGenerateLine(5)];
         }
-
-        return [reallyGenerateLine(5)]; //, reallyGenerateLine(7), reallyGenerateLine(5)];
     }
 };
 
@@ -100,8 +111,8 @@ function init() {
 
 function generatePoem() {
     var text = getPage("text.txt");
-    var chain = buildChain(text);
-    var lines = [];
     var sel = document.getElementById("poemType");
-    document.getElementById("poem").innerHTML = poemFunctions[sel.options[sel.selectedIndex].text](chain).join("<br />");
+    var func = poemFunctions[sel.options[sel.selectedIndex].text];
+    var chain = buildChain(text, func.length);
+    document.getElementById("poem").innerHTML = func.generate(chain).join("<br />");
 }
