@@ -1,6 +1,42 @@
 <html>
-    <body onload="generatePoem()">
-        <p id="poem"></p>
-        <script src="script.js"></script>
-    </body>
+
+<head>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+</head>
+
+<body>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+    <script src="script.js"></script>
+
+    <header>
+        <nav class="top-nav blue-grey darken-1">
+            <div class="container">
+                <div class="nav-wrapper white-text">
+                    <a class="page-title">Poem Generator</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container">
+        <br />
+        <div class="row center">
+            <div class="col s12">
+                <a class="orange darken-2 btn-large waves-effect waves-light" onclick="generatePoem()">Generate</a>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col s12">
+                <div class="card blue-grey darken-1">
+                    <div class="card-content white-text">
+                        <p id="poem"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
 </html>

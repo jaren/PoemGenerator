@@ -1,11 +1,15 @@
 function buildChain(text) {
    var sentences = text.split(/[.?!]+/).map(x => x.replace(/[^a-zA-Z_ ]/g, " ")).filter(x => x.length > 0);
 
-   var chain = {};
+   var chain = { "\n": {} };
    for (let sentence of sentences) {
        let words = sentence.split(" ").filter(x => x.length > 0);
        words.push("\n");
        for (let i = 0; i < words.length - 1; i++) {
+           if (i == 0) {
+               if (chain["\n"][words[i]] == null) chain["\n"][words[i]] = 0;
+               chain["\n"][words[i]]++;
+           }
            if (chain[words[i]] == null) chain[words[i]] = {};
            if (chain[words[i]][words[i + 1]] == null) chain[words[i]][words[i + 1]] = 0;
            chain[words[i]][words[i + 1]]++;
@@ -59,12 +63,12 @@ var poemFunctions = {
 
     freeform: function(chain) {
         function followChain(word, depth) {
-            if (chain[word] == null || depth > 10) return word;
+            if (word == "\n" || depth > 100) return word;
             return word + " " + followChain(randomWeighted(chain[word]), depth + 1);
         }
         var lines = [];
         for (let i = 0; i < 10; i++) {
-            lines.push(followChain(randomElement(Object.keys(chain)), 0));
+            lines.push(followChain(randomWeighted(chain["\n"]), 0));
         }
         return lines;
     },
