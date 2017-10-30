@@ -24,8 +24,8 @@ function buildChain(text, length) {
 }
 
 function findSyllables(word, callback) {
-    var json = JSON.parse(getPage("http://api.wordnik.com:80/v4/word.json/" + word.toLowerCase() + "/hyphenation?useCanonical=false&limit=50&api_key=a2a73e7b926c924fad7001ca3111acd55af2ffabf50eb4ae5"));
-    return json.length;
+    var json = JSON.parse(getPage("http://api.datamuse.com/words?sp=" + word.toLowerCase() + "&qe=sp&md=s"));
+    return json[0].numSyllables;
 }
 
 function randomElement(array) {
@@ -74,15 +74,18 @@ var poemFunctions = {
                 if (startWord == null) startWord = "\n";
                 let subchain = {};
                 for (let item in chain[startWord]) {
-                    if (findSyllables(item) <= syllables && item != "\n") {
+                    if (/*findSyllables(item) <= syllables &&*/ item != "\n") {
                         subchain[item] = chain[startWord][item];
                     }
                 }
                 if (Object.keys(subchain).length == 0) return null;
                 let word = randomWeighted(subchain);
                 let wordSyllables = findSyllables(word);
+                if (wordSyllables > syllables || wordSyllables == 0) return null;
+                if (wordSyllables == syllables) return word;
                 let next = generateLine(syllables - wordSyllables, word);
                 if (next == null) return null;
+                console.log(word + " syllables: " + wordSyllables);
                 return word + " " + next;
             }
 
@@ -93,7 +96,7 @@ var poemFunctions = {
                 }
             }
 
-            return [reallyGenerateLine(5)]; //, reallyGenerateLine(7), reallyGenerateLine(5)];
+            return [reallyGenerateLine(5), reallyGenerateLine(7), reallyGenerateLine(5)];
         }
     }
 };
