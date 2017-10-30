@@ -1,21 +1,21 @@
 function buildChain(text) {
-   var sentences = text.split(/[.?!]+/).map(x => x.replace(/[^a-zA-Z'_ ]/g, " ")).filter(x => x.length > 0);
+    var sentences = text.split(/[.?!]+/).map(x => x.replace(/[^a-zA-Z'_ ]/g, " ")).filter(x => x.length > 0);
 
-   var chain = { "\n": {} };
-   for (let sentence of sentences) {
-       let words = sentence.split(" ").filter(x => x.length > 0);
-       words.push("\n");
-       for (let i = 0; i < words.length - 1; i++) {
-           if (i == 0) {
-               if (chain["\n"][words[i]] == null) chain["\n"][words[i]] = 0;
-               chain["\n"][words[i]]++;
-           }
-           if (chain[words[i]] == null) chain[words[i]] = {};
-           if (chain[words[i]][words[i + 1]] == null) chain[words[i]][words[i + 1]] = 0;
-           chain[words[i]][words[i + 1]]++;
-       }
-   }
-   return chain;
+    var chain = { "\n": {} };
+    for (let sentence of sentences) {
+        let words = sentence.split(" ").filter(x => x.length > 0);
+        words.push("\n");
+        for (let i = 0; i < words.length - 1; i++) {
+            if (i == 0) {
+                if (chain["\n"][words[i]] == null) chain["\n"][words[i]] = 0;
+                chain["\n"][words[i]]++;
+            }
+            if (chain[words[i]] == null) chain[words[i]] = {};
+            if (chain[words[i]][words[i + 1]] == null) chain[words[i]][words[i + 1]] = 0;
+            chain[words[i]][words[i + 1]]++;
+        }
+    }
+    return chain;
 }
 
 function findSyllables(word, callback) {
@@ -47,7 +47,7 @@ function getPage(url) {
 }
 
 var poemFunctions = {
-    freeform: function(chain) {
+    freeform: function (chain) {
         function followChain(word, depth) {
             if (word == "\n" || depth > 100) return word;
             return word + " " + followChain(randomWeighted(chain[word]), depth + 1);
@@ -59,18 +59,31 @@ var poemFunctions = {
         return lines;
     },
 
-    haiku: function(chain) {
-        /*function generateLine(syllables, startWord) {
+    haiku: function (chain) {
+        function generateLine(syllables, startWord) {
+            if (startWord == null) startWord = "\n";
+            let subchain = {};
+            for (let item in chain[startWord]) {
+                if (findSyllables(item) <= syllables && item != "\n") {
+                    subchain[item] = chain[startWord][item];
+                }
+            }
+            if (Object.keys(subchain).length == 0) return null;
+            let word = randomWeighted(subchain);
+            let wordSyllables = findSyllables(word);
+            let next = generateLine(syllables - wordSyllables, word);
+            if (next == null) return null;
+            return word + " " + next;
+        }
+
+        function reallyGenerateLine(syllables) {
             while (true) {
-                let word = (startWord == null) ? randomElement(Object.keys(chain)) : startWord;
-                if (word.length == syllables) return word; // CHANGE
-                if (Math.min(Object.keys(chain[word]).map(key => chain[word][key])) < syllables) return word + " " + generateLine(syllables - findSyllables(word), word);
-                return null;
+                var item = generateLine(syllables);
+                if (item != null) return item;
             }
         }
 
-        return [ generateLine(5), generateLine(7), generateLine(5) ];
-        */
+        return [reallyGenerateLine(5)]; //, reallyGenerateLine(7), reallyGenerateLine(5)];
     }
 };
 
