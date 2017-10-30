@@ -24,7 +24,7 @@ function buildChain(text, length) {
 }
 
 function findSyllables(word, callback) {
-    var json = JSON.parse(getPage("http://api.datamuse.com/words?sp=" + word.toLowerCase() + "&qe=sp&md=s&max=1"));
+    var json = JSON.parse(getPage("https://api.datamuse.com/words?sp=" + word.toLowerCase() + "&qe=sp&md=s&max=1"));
     return json[0].numSyllables;
 }
 
