@@ -3,13 +3,18 @@
 <head>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 
-<body>
+<body onload="init()">
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
     <script src="script.js"></script>
+    <script>
+      $(document).ready(function() {
+        $('select').material_select();
+      });
+    </script>
 
     <header>
         <nav class="top-nav blue-grey darken-1">
@@ -22,7 +27,15 @@
     </header>
 
     <main class="container">
-        <br />
+        <div class="row center">
+            <form>
+                <div class="input-field col s12">
+                    <select id="poemType">
+                    </select>
+                    <label>Poem Type</label>
+                </div>
+            </form>
+        </div>
         <div class="row center">
             <div class="col s12">
                 <a class="orange darken-2 btn-large waves-effect waves-light" onclick="generatePoem()">Generate</a>

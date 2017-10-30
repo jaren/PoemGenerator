@@ -47,6 +47,18 @@ function getPage(url) {
 }
 
 var poemFunctions = {
+    freeform: function(chain) {
+        function followChain(word, depth) {
+            if (word == "\n" || depth > 100) return word;
+            return word + " " + followChain(randomWeighted(chain[word]), depth + 1);
+        }
+        var lines = [];
+        for (let i = 0; i < 10; i++) {
+            lines.push(followChain(randomWeighted(chain["\n"]), 0));
+        }
+        return lines;
+    },
+
     haiku: function(chain) {
         /*function generateLine(syllables, startWord) {
             while (true) {
@@ -59,24 +71,24 @@ var poemFunctions = {
 
         return [ generateLine(5), generateLine(7), generateLine(5) ];
         */
-    },
-
-    freeform: function(chain) {
-        function followChain(word, depth) {
-            if (word == "\n" || depth > 100) return word;
-            return word + " " + followChain(randomWeighted(chain[word]), depth + 1);
-        }
-        var lines = [];
-        for (let i = 0; i < 10; i++) {
-            lines.push(followChain(randomWeighted(chain["\n"]), 0));
-        }
-        return lines;
-    },
+    }
 };
+
+function init() {
+    var sel = document.getElementById("poemType");
+    for (let key in poemFunctions) {
+        let opt = document.createElement("option");
+        opt.value = key;
+        opt.innerHTML = key;
+        sel.appendChild(opt);
+    }
+    sel.getElementsByTagName("option")[0].selected = "selected";
+}
 
 function generatePoem() {
     var text = getPage("text.txt");
     var chain = buildChain(text);
     var lines = [];
-    document.getElementById("poem").innerHTML = poemFunctions.freeform(chain).join("<br />");
+    var sel = document.getElementById("poemType");
+    document.getElementById("poem").innerHTML = poemFunctions[sel.options[sel.selectedIndex].text](chain).join("<br />");
 }
