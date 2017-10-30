@@ -24,7 +24,7 @@ function buildChain(text, length) {
 }
 
 function findSyllables(word, callback) {
-    var json = JSON.parse(getPage("http://api.datamuse.com/words?sp=" + word.toLowerCase() + "&qe=sp&md=s"));
+    var json = JSON.parse(getPage("http://api.datamuse.com/words?sp=" + word.toLowerCase() + "&qe=sp&md=s&max=1"));
     return json[0].numSyllables;
 }
 
@@ -52,52 +52,45 @@ function getPage(url) {
 }
 
 var poemFunctions = {
-    freeform: {
-        length: 2,
-        generate: function (chain) {
-            function followChain(word, depth) {
-                if (word == "\n" || depth > 100) return word;
-                return word + " " + followChain(randomWeighted(chain[word]), depth + 1);
-            }
-            var lines = [];
-            for (let i = 0; i < 10; i++) {
-                lines.push(followChain(randomWeighted(chain["\n"]), 0));
-            }
-            return lines;
+    freeform: function (chain) {
+        function followChain(word, depth) {
+            if (word == "\n" || depth > 100) return word;
+            return word + " " + followChain(randomWeighted(chain[word]), depth + 1);
         }
+        var lines = [];
+        for (let i = 0; i < 10; i++) {
+            lines.push(followChain(randomWeighted(chain["\n"]), 0));
+        }
+        return lines;
     },
 
-    haiku: {
-        length: 1,
-        generate: function (chain) {
-            function generateLine(syllables, startWord) {
-                if (startWord == null) startWord = "\n";
-                let subchain = {};
-                for (let item in chain[startWord]) {
-                    if (/*findSyllables(item) <= syllables &&*/ item != "\n") {
-                        subchain[item] = chain[startWord][item];
-                    }
-                }
-                if (Object.keys(subchain).length == 0) return null;
-                let word = randomWeighted(subchain);
-                let wordSyllables = findSyllables(word);
-                if (wordSyllables > syllables || wordSyllables == 0) return null;
-                if (wordSyllables == syllables) return word;
-                let next = generateLine(syllables - wordSyllables, word);
-                if (next == null) return null;
-                console.log(word + " syllables: " + wordSyllables);
-                return word + " " + next;
-            }
-
-            function reallyGenerateLine(syllables) {
-                while (true) {
-                    var item = generateLine(syllables);
-                    if (item != null) return item;
+    haiku: function (chain) {
+        function generateLine(syllables, startWord) {
+            if (startWord == null) startWord = "\n";
+            let subchain = {};
+            for (let item in chain[startWord]) {
+                if (!item.includes("'") && item != "\n") { // Apostrophe messes up syllables datamuse
+                    subchain[item] = chain[startWord][item];
                 }
             }
-
-            return [reallyGenerateLine(5), reallyGenerateLine(7), reallyGenerateLine(5)];
+            if (Object.keys(subchain).length == 0) return null;
+            let word = randomWeighted(subchain);
+            let wordSyllables = findSyllables(word);
+            if (wordSyllables > syllables || wordSyllables == 0) return null;
+            if (wordSyllables == syllables) return word;
+            let next = generateLine(syllables - wordSyllables, word);
+            if (next == null) return null;
+            return word + " " + next;
         }
+
+        function reallyGenerateLine(syllables) {
+            while (true) {
+                var item = generateLine(syllables);
+                if (item != null) return item;
+            }
+        }
+
+        return [reallyGenerateLine(5), reallyGenerateLine(7), reallyGenerateLine(5)];
     }
 };
 
@@ -116,6 +109,6 @@ function generatePoem() {
     var text = getPage("text.txt");
     var sel = document.getElementById("poemType");
     var func = poemFunctions[sel.options[sel.selectedIndex].text];
-    var chain = buildChain(text, func.length);
-    document.getElementById("poem").innerHTML = func.generate(chain).join("<br />");
+    var chain = buildChain(text, document.getElementById("markovLength").selectedIndex + 1);
+    document.getElementById("poem").innerHTML = func(chain).join("<br />");
 }
