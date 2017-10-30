@@ -1,5 +1,5 @@
 function buildChain(text) {
-   var sentences = text.split(/[.?!]+/).map(x => x.replace(/[^a-zA-Z_ ]/g, " ")).filter(x => x.length > 0);
+   var sentences = text.split(/[.?!]+/).map(x => x.replace(/[^a-zA-Z'_ ]/g, " ")).filter(x => x.length > 0);
 
    var chain = { "\n": {} };
    for (let sentence of sentences) {
