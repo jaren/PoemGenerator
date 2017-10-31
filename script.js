@@ -81,7 +81,7 @@ var poemFunctions = {
     },
 
     haiku: function () {
-        return [ generateLine({ syllables: 5 }), generateLine({ syllables: 7 }), generateLine({ syllables: 5 }) ];
+        return [ generateLine({ syllables: 5 }).line, generateLine({ syllables: 7 }).line, generateLine({ syllables: 5 }).line ];
     },
 
     iambicPentameter: function () {
