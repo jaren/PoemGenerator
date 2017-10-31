@@ -109,6 +109,8 @@ function init(url) {
     })
     .catch(_ => {
         alert("Invalid data!");
+        document.getElementById("generate").innerHTML = "Generate";
+        window.ready = true;
     });
 }
 
