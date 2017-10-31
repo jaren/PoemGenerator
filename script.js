@@ -1,3 +1,6 @@
+window.maxLineLength = 100;
+window.maxTries = 10000;
+
 function getSyllables(word) {
     return word.trim().split(" ").map(x => window.wordData[x].syllables).reduce((x, y) => x + y);
 }
@@ -40,8 +43,10 @@ function generateLine(constraints) {
     if (constraints.syllables != null) {
         if (!constraints.notRoot) {
             var result;
+            var tries = 0;
             while (result == null) {
                 result = generateLine(Object.assign({}, constraints, { notRoot: true }));
+                if (tries++ > window.maxTries) return null;
             }
             output = result.line;
             word = result.lastWord;
@@ -59,7 +64,7 @@ function generateLine(constraints) {
     } else {
         for (let count = 0; ; count++) {
             word = randomWeighted(window.chain[word]);
-            if (count > 100 || word == "\n") break;
+            if (count > window.maxLineLength || word == "\n") break;
             output += word + " ";
         }
     }
@@ -76,7 +81,19 @@ var poemFunctions = {
     },
 
     haiku: function () {
-        return [generateLine({ syllables: 5 }).line, generateLine({ syllables: 7 }).line, generateLine({ syllables: 5 }).line];
+        var arr = [ 5, 7, 5 ];
+        for (let i = 0; i < maxTries; i++) {
+            let lines = [];
+            let previousWord = "\n";
+            for (let e = 0; e < arr.length; e++) {
+                var line = generateLine({ syllables: arr[e], startWord: previousWord });
+                if (line == null) continue;
+                previousWord = line.lastWord;
+                lines.push(line);
+            }
+            return lines.map(x => x.line);
+        }
+        alert("Poem generation failed, try again?");
     },
 
     iambicPentameter: function () {
