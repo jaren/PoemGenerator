@@ -90,6 +90,7 @@ var poemFunctions = {
 };
 
 function init() {
+    document.getElementById("generate").innerHTML = "Loading...";
     var sel = document.getElementById("poemType");
     for (let key in poemFunctions) {
         let opt = document.createElement("option");
@@ -104,6 +105,7 @@ function init() {
         window.possibleChains = json.chains;
         window.wordData = json.wordData;
         window.ready = true;
+        document.getElementById("generate").innerHTML = "Generate";
     });
 }
 
