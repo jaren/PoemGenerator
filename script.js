@@ -101,7 +101,7 @@ var poemFunctions = {
     }
 };
 
-function init() {
+function init(url) {
     var sel = document.getElementById("poemType");
     for (let key in poemFunctions) {
         let opt = document.createElement("option");
@@ -110,12 +110,15 @@ function init() {
         sel.appendChild(opt);
     }
     sel.getElementsByTagName("option")[0].selected = "selected";
-    fetch("https://gist.githubusercontent.com/arbaliste/b0779f332822e019fd323a6a39338f0a/raw/c2b1ad59e3790f75da87c6249a563345e4b9bdc7/portrait.json")
+    fetch(url)
     .then(data => data.json())
     .then(json => {
         window.possibleChains = json.chains;
         window.wordData = json.wordData;
         window.ready = true;
+    })
+    .catch(_ => {
+        alert("Invalid data!");
     });
 }
 

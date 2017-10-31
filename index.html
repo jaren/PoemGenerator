@@ -10,7 +10,7 @@
     <script src="script.js"></script>
 </head>
 
-<body onload="init()">
+<body onload="init('https://gist.githubusercontent.com/arbaliste/b0779f332822e019fd323a6a39338f0a/raw/c2b1ad59e3790f75da87c6249a563345e4b9bdc7/portrait.json')">
 
     <script>
       $(document).ready(function() {
@@ -22,7 +22,7 @@
         <nav class="top-nav blue-grey darken-1">
             <div class="container">
                 <div class="nav-wrapper white-text">
-                    <a class="page-title">Poem Generator</a>
+                    <a class="page-title" onclick="init(prompt('Enter data URL:'))" >Poem Generator</a>
                 </div>
             </div>
         </nav>
