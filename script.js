@@ -1,96 +1,70 @@
-function buildChain(text, length) {
-    var sentences = text.split(/[.?!]+/)
-        .map(x => x.replace(/[^a-zA-Z'_ ]/g, " "))
-        .filter(x => x.length > 0);
+function getSyllables(word) {
+    return word.split(" ").map(x => window.wordData[x].syllables).reduce((x, y) => x + y);
+}
 
-    var chain = { "\n": {} };
-    for (let sentence of sentences) {
-        let wordsSingle = sentence.split(" ").filter(x => x.length > 0);
-        let words = [];
-        while (wordsSingle.length > 0)
-            words.push(wordsSingle.splice(0, length).join(" "));
-        words.push("\n");
-        for (let i = 0; i < words.length - 1; i++) {
-            if (i == 0) {
-                if (chain["\n"][words[i]] == null) chain["\n"][words[i]] = 0;
-                chain["\n"][words[i]]++;
+function getStresses(word) {
+    return word.split(" ").map(x => window.wordData[x].pronounce.replace(/[^0-9]/g, "")).reduce((x, y) => x + y).split("").map(x => parseInt(x));
+}
+
+function getRhymes(word) {
+    word = word.split(" ").slice(-1)[0];
+    // TODO
+}
+
+function generateLine(constraints) {
+    // TODO
+    /*
+    {
+        startWord: "",
+        requireIambic: false,
+        syllables: 10,
+        rhyme: "cat",
+    }
+    */
+    if (constraints.startWord == null) constraints.startWord = "\n";
+
+    var output = "";
+    var word = "\n";
+    if (constraints.syllables != null) {
+        if (!constraints.notRoot) {
+            var result;
+            while (result == null) {
+                result = generateLine(Object.assign({}, constraints, { notRoot: true }));
             }
-            if (chain[words[i]] == null) chain[words[i]] = {};
-            if (chain[words[i]][words[i + 1]] == null) chain[words[i]][words[i + 1]] = 0;
-            chain[words[i]][words[i + 1]]++;
+            output = result.line;
+            word = result.lastWord;
+        } else {
+            var possibilities = Object.keys(window.chain[constraints.startWord]).filter(x => (x != "\n") && (getSyllables(x) <= constraints.syllables));
+            if (possibilities.length == 0) return null;
+            var currentWord = randomElement(possibilities);
+            var syllablesLeft = constraints.syllables - getSyllables(currentWord);
+            var next = {};
+            if (syllablesLeft > 0) next = generateLine(Object.assign({}, constraints, { syllables: syllablesLeft, startWord: currentWord }));
+            if (next == null) return null;
+            output = currentWord + " " + (next.line || "");
+            word = next.lastWord || currentWord;
+        }
+    } else {
+        for (let count = 0; ; count++) {
+            word = randomWeighted(window.chain[word]);
+            if (count > 100 || word == "\n") break;
+            output += word + " ";
         }
     }
-    return chain;
-}
 
-function findSyllables(word, callback) {
-    var json = JSON.parse(getPage("https://api.datamuse.com/words?sp=" + word.toLowerCase() + "&qe=sp&md=s&max=1"));
-    return json[0].numSyllables;
-}
-
-function randomElement(array) {
-    return array[Math.floor(Math.random() * array.length)];
-}
-
-function randomWeighted(dict) {
-    var total = Object.values(dict).reduce((total, x) => total + x);
-
-    var random = Math.floor(Math.random() * total);
-    var value = 0;
-    for (let property in dict) {
-        value += dict[property];
-        if (value >= random) return property;
-    }
-}
-
-function getPage(url) {
-    var request = new XMLHttpRequest();
-    request.open("GET", url, false);
-    request.send(null);
-    if (request.status !== 200) return null;
-    return request.responseText;
+    return {
+        line: output.trim(),
+        lastWord: word
+    };
 }
 
 var poemFunctions = {
-    freeform: function (chain) {
-        function followChain(word, depth) {
-            if (word == "\n" || depth > 100) return word;
-            return word + " " + followChain(randomWeighted(chain[word]), depth + 1);
-        }
-        var lines = [];
-        for (let i = 0; i < 10; i++) {
-            lines.push(followChain(randomWeighted(chain["\n"]), 0));
-        }
-        return lines;
+    freeform: function () {
+        return Array.apply(null, Array(10)).map(_ => generateLine({ }).line);
     },
 
-    haiku: function (chain) {
-        function generateLine(syllables, startWord) {
-            if (startWord == null) startWord = "\n";
-            let subchain = {};
-            for (let item in chain[startWord]) {
-                if (!item.includes("'") && item != "\n") { // Apostrophe messes up syllables datamuse
-                    subchain[item] = chain[startWord][item];
-                }
-            }
-            if (Object.keys(subchain).length == 0) return null;
-            let word = randomWeighted(subchain);
-            let wordSyllables = findSyllables(word);
-            if (wordSyllables > syllables || wordSyllables == 0) return null;
-            if (wordSyllables == syllables) return word;
-            let next = generateLine(syllables - wordSyllables, word);
-            if (next == null) return null;
-            return word + " " + next;
-        }
-
-        function reallyGenerateLine(syllables) {
-            while (true) {
-                var item = generateLine(syllables);
-                if (item != null) return item;
-            }
-        }
-
-        return [reallyGenerateLine(5), reallyGenerateLine(7), reallyGenerateLine(5)];
+    haiku: function () {
+        return [generateLine({ syllables: 5 }).line, generateLine({ syllables: 7 }).line, generateLine({ syllables: 5 }).line];
     }
 };
 
@@ -103,12 +77,22 @@ function init() {
         sel.appendChild(opt);
     }
     sel.getElementsByTagName("option")[0].selected = "selected";
+    fetch("https://gist.githubusercontent.com/arbaliste/b0779f332822e019fd323a6a39338f0a/raw/c2b1ad59e3790f75da87c6249a563345e4b9bdc7/portrait.json")
+    .then(data => data.json())
+    .then(json => {
+        window.possibleChains = json.chains;
+        window.wordData = json.wordData;
+        window.ready = true;
+    });
 }
 
 function generatePoem() {
-    var text = getPage("text.txt");
+    if (!window.ready) {
+        alert("Not ready!")
+        return;
+    }
+    window.chain = window.possibleChains[document.getElementById("markovLength").selectedIndex];
     var sel = document.getElementById("poemType");
     var func = poemFunctions[sel.options[sel.selectedIndex].text];
-    var chain = buildChain(text, document.getElementById("markovLength").selectedIndex + 1);
-    document.getElementById("poem").innerHTML = func(chain).join("<br />");
+    document.getElementById("poem").innerHTML = func().join("<br />");
 }
