@@ -1,28 +1,40 @@
 function getSyllables(word) {
-    return word.split(" ").map(x => window.wordData[x].syllables).reduce((x, y) => x + y);
+    return word.trim().split(" ").map(x => window.wordData[x].syllables).reduce((x, y) => x + y);
 }
 
 function getStresses(word) {
-    return word.split(" ").map(x => window.wordData[x].pronounce.replace(/[^0-9]/g, "")).reduce((x, y) => x + y).split("").map(x => parseInt(x));
+    return word.trim().split(" ").map(x => window.wordData[x].pronounce.replace(/[^0-9]/g, "")).reduce((x, y) => x + y).split("").map(x => parseInt(x));
+}
+
+function checkIambic(word) {
+    var stresses = getStresses(word).map(x => x == 0 ? 0 : 1);
+    for (let i = 0; i < stresses.length; i++) {
+        if (stresses[i] != i % 2) return false; 
+    }
+    return true;
 }
 
 function getRhymes(word) {
-    word = word.split(" ").slice(-1)[0];
+    word = word.trim().split(" ").slice(-1)[0];
     // TODO
 }
 
 function generateLine(constraints) {
-    // TODO
-    /*
+    /* Format:
     {
         startWord: "",
-        requireIambic: false,
         syllables: 10,
-        rhyme: "cat",
+        requireIambic: false, // Requires syllables
+        rhyme: "cat", // TODO
+
+        notRoot: false,
+        previous: null
     }
     */
     if (constraints.startWord == null) constraints.startWord = "\n";
+    if (constraints.previous == null) constraints.previous = "";
 
+    /* This is a mess... */
     var output = "";
     var word = "\n";
     if (constraints.syllables != null) {
@@ -34,12 +46,12 @@ function generateLine(constraints) {
             output = result.line;
             word = result.lastWord;
         } else {
-            var possibilities = Object.keys(window.chain[constraints.startWord]).filter(x => (x != "\n") && (getSyllables(x) <= constraints.syllables));
+            var possibilities = Object.keys(window.chain[constraints.startWord]).filter(x => (x != "\n") && (constraints.requireIambic == null || constraints.requireIambic == false || checkIambic(constraints.previous + " " + x)) && (getSyllables(x) <= constraints.syllables));
             if (possibilities.length == 0) return null;
             var currentWord = randomElement(possibilities);
-            var syllablesLeft = constraints.syllables - getSyllables(currentWord);
+            var syllablesLeft = constraints.syllables && (constraints.syllables - getSyllables(currentWord));
             var next = {};
-            if (syllablesLeft > 0) next = generateLine(Object.assign({}, constraints, { syllables: syllablesLeft, startWord: currentWord }));
+            if (syllablesLeft !== 0) next = generateLine(Object.assign({}, constraints, { syllables: syllablesLeft, startWord: currentWord, previous: constraints.previous + " " + currentWord }));
             if (next == null) return null;
             output = currentWord + " " + (next.line || "");
             word = next.lastWord || currentWord;
@@ -65,6 +77,10 @@ var poemFunctions = {
 
     haiku: function () {
         return [generateLine({ syllables: 5 }).line, generateLine({ syllables: 7 }).line, generateLine({ syllables: 5 }).line];
+    },
+
+    iambicPentameter: function () {
+        return Array.apply(null, Array(10)).map(_ => generateLine({ syllables: 10, requireIambic: true }).line);
     }
 };
 
