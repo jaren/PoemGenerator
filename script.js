@@ -81,19 +81,7 @@ var poemFunctions = {
     },
 
     haiku: function () {
-        var arr = [ 5, 7, 5 ];
-        for (let i = 0; i < maxTries; i++) {
-            let lines = [];
-            let previousWord = "\n";
-            for (let e = 0; e < arr.length; e++) {
-                var line = generateLine({ syllables: arr[e], startWord: previousWord });
-                if (line == null) continue;
-                previousWord = line.lastWord;
-                lines.push(line);
-            }
-            return lines.map(x => x.line);
-        }
-        alert("Poem generation failed, try again?");
+        return [ generateLine({ syllables: 5 }), generateLine({ syllables: 7 }), generateLine({ syllables: 5 }) ];
     },
 
     iambicPentameter: function () {
