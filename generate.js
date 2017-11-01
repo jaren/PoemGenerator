@@ -5,12 +5,12 @@ function generate() {
     var stripUrls = document.getElementById("stripUrls").checked;
     var output = {
         wordData: {},
-        chains: [
-            buildChain(input, splitSentences, stripUrls, stripChars, 1),
-            buildChain(input, splitSentences, stripUrls, stripChars, 2),
-            buildChain(input, splitSentences, stripUrls, stripChars, 3)
-        ]
+        chains: []
     };
+
+    for (let i = 0; i < document.getElementById("chainNum").value; i++)
+        output.chains.push(buildChain(input, splitSentences, stripUrls, stripChars, 1));
+
     var words = Object.keys(output.chains[0]).filter(x => x != "\n");
     function finished() {
         document.getElementById("output").value = JSON.stringify(output);

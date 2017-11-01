@@ -153,6 +153,7 @@ var poemFunctions = {
 function init(url) {
     document.getElementById("generate").innerHTML = "Loading...";
     var sel = document.getElementById("poemType");
+    while (sel.firstChild) sel.removeChild(sel.firstChild);
     for (let key in poemFunctions) {
         let opt = document.createElement("option");
         opt.value = key;
@@ -165,8 +166,17 @@ function init(url) {
         .then(json => {
             window.possibleChains = json.chains;
             window.wordData = json.wordData;
-            window.ready = true;
+            var numSel = document.getElementById("markovLength");
+            while (numSel.firstChild) numSel.removeChild(numSel.firstChild);
+            for (let i = 1; i < window.possibleChains.length + 1; i++) {
+                let opt = document.createElement("option");
+                opt.value = i.toString();
+                opt.innerHTML = i.toString();
+                numSel.appendChild(opt);
+            }
             document.getElementById("generate").innerHTML = "Generate";
+            window.ready = true;
+            $('select').material_select();
         })
         .catch(_ => {
             alert("Invalid data!");
