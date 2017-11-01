@@ -13,10 +13,15 @@ function randomWeighted(dict) {
     }
 }
 
-function buildChain(text, length) {
-    var sentences = text.split(/[.?!]+/)
-        .map(x => x.replace(/[^a-zA-Z'_ ]/g, " "))
-        .filter(x => x.length > 0);
+function buildChain(text, splitSentences, stripUrls, stripChars, length) {
+    var sentences = text;
+    if (stripUrls) sentences = sentences.replace(/https?:\/\/.*\s/g, " ");
+    if (splitSentences)
+        sentences = sentences.replace("\n", " ").split(/[.?!]+/);
+    else
+        sentences = sentences.split(/\n+/);
+    if (stripChars) sentences = sentences.map(x => x.replace(/[^a-zA-Z'_ ]/g, " "));
+    sentences = sentences.map(x => x.trim()).filter(x => x.length > 0);
 
     var chain = { "\n": {} };
     for (let sentence of sentences) {
