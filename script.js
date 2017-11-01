@@ -141,8 +141,12 @@ var poemFunctions = {
             });
         }
 
-        var lines = Array.apply(null, Array(5)).map(_ => generateRhyme());
-        return [lines[0][0], lines[1][0], lines[0][1], lines[1][1], "", lines[2][0], lines[3][0], lines[2][1], lines[3][1], "", lines[4][0], lines[4][1]];
+        var lines = Array.apply(null, Array(7)).map(_ => generateRhyme());
+        return [
+            lines[0][0], lines[1][0], lines[0][1], lines[1][1], "", 
+            lines[2][0], lines[3][0], lines[2][1], lines[3][1], "",
+            lines[4][0], lines[5][0], lines[4][1], lines[5][1], "",
+            lines[6][0], lines[6][1]];
     }
 };
 
