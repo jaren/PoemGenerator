@@ -146,7 +146,7 @@ function generatePoem() {
     window.chain = window.possibleChains[document.getElementById("markovLength").selectedIndex];
 
     // Build reverse chain
-    window.reverseChain = reverseChain(window.chain);
+    window.flippedChain = reverseChain(window.chain);
 
     // Build rhyme list
     window.rhymes = {};
