@@ -1,17 +1,22 @@
 window.maxLineLength = 100;
 window.maxTries = 10000;
 
+function splitWord(word) {
+    return word.trim().split(" ").filter(x => x.length > 0);
+}
+
 function getSyllables(word) {
-    return word.trim().split(" ").map(x => window.wordData[x].syllables).reduce((x, y) => x + y);
+    return splitWord(word).map(x => window.wordData[x].syllables).reduce((x, y) => x + y);
 }
 
 function getStresses(word) {
-    return word.trim().split(" ").map(x => window.wordData[x].pronounce.replace(/[^0-9]/g, "")).reduce((x, y) => x + y).split("").map(x => parseInt(x));
+    return splitWord(word).map(x => window.wordData[x].pronounce.replace(/[^0-9]/g, "")).reduce((x, y) => x + y).split("").map(x => parseInt(x));
 }
 
 function checkIambic(word, reversed) {
     // Only valid for even syllables
     var stresses = getStresses(word).map(x => x == 0 ? 0 : 1);
+    if (reversed) stresses.reverse();
     for (let i = 0; i < stresses.length; i++) {
         if (stresses[i] != (reversed ? i + 1 : i) % 2) return false;
     }
@@ -19,7 +24,7 @@ function checkIambic(word, reversed) {
 }
 
 function getRhymeStem(word) {
-    var pronounce = window.wordData[word.trim().split(" ").slice(-1)[0]].pronounce.replace(/[0-9]/g, "").split(" ").filter(x => x.length > 0);
+    var pronounce = splitWord(window.wordData[splitWord(word).slice(-1)[0]].pronounce.replace(/[0-9]/g, ""));
     pronounce.splice(0, pronounce.lastIndexOf(pronounce.filter(x => /[AEIOU]/.test(x)).slice(-1)[0]));
     return pronounce.join(" ");
 }
@@ -30,17 +35,21 @@ function getRhymes(word) {
     return list;
 }
 
-function forceGenerateLine(constraints, hideAlert) {
-    var line = null;
+function forceFunction(func, hideAlert) {
+    var result = null;
     var tries = 0;
-    while (line == null) {
-        line = generateLine(constraints);
+    while (result == null) {
+        result = func();
         if (tries++ > window.maxTries) {
             if (!hideAlert) alert("Poem generation failed. You can try again, but the current dataset may not have any matches :(");
             return null;
         }
     }
-    return line;
+    return result;
+}
+
+function forceGenerateLine(constraints, hideAlert) {
+    return forceFunction(() => generateLine(constraints), hideAlert);
 }
 
 function generateLine(constraints) {
@@ -64,29 +73,35 @@ function generateLine(constraints) {
     var output = "";
     var word = "\n";
     if (constraints.syllables != null) {
-        if (!constraints.notRoot) {
-            var result = forceGenerateLine(Object.assign({}, constraints, { notRoot: true }));
-            output = result.line;
-            word = result.lastWord;
-        } else {
-            var possibilities = Object.keys(chain[constraints.startWord]).filter(x => (x != "\n") && (constraints.requireIambic == null || constraints.requireIambic == false || checkIambic(constraints.previous + " " + x)) && (getSyllables(x) <= constraints.syllables));
-            if (possibilities.length == 0) return null;
-            var currentWord = randomElement(possibilities);
-            var syllablesLeft = constraints.syllables && (constraints.syllables - getSyllables(currentWord));
-            var next = {};
-            if (syllablesLeft !== 0) next = generateLine(Object.assign({}, constraints, { syllables: syllablesLeft, startWord: currentWord, previous: constraints.previous + " " + currentWord }));
-            if (next == null) return null;
-            if (constraints.reversed)
-                output = (next.line || "") + " " + currentWord;
-            else
-                output = currentWord + " " + (next.line || "");
-            word = next.lastWord || currentWord;
+        var possibilities = Object.keys(chain[constraints.startWord]).filter(x => {
+            return (x != "\n")
+                && (constraints.requireIambic == null
+                    || constraints.requireIambic == false
+                    || (constraints.reversed ? checkIambic(x + " " + constraints.previous, true) : checkIambic(constraints.previous + " " + x)))
+                && (getSyllables(x) <= constraints.syllables);
+        });
+        if (possibilities.length == 0) return null;
+        var currentWord = randomElement(possibilities);
+        var syllablesLeft = constraints.syllables && (constraints.syllables - getSyllables(currentWord));
+        var next = {};
+        if (syllablesLeft !== 0) {
+            next = generateLine(Object.assign({}, constraints, {
+                syllables: syllablesLeft,
+                startWord: currentWord,
+                previous: constraints.reversed ? (currentWord + " " + constraints.previous) : (constraints.previous + " " + currentWord)
+            }));
         }
+        if (next == null) return null;
+        if (constraints.reversed)
+            output = (next.line || "") + " " + currentWord;
+        else
+            output = currentWord + " " + (next.line || "");
+        word = next.lastWord || currentWord;
     } else {
         for (let count = 0; ; count++) {
             word = randomWeighted(chain[word]);
             if (count > window.maxLineLength || word == "\n") break;
-            if (constraints.reversed) 
+            if (constraints.reversed)
                 output = word + " " + output;
             else
                 output += word + " ";
@@ -101,30 +116,29 @@ function generateLine(constraints) {
 
 var poemFunctions = {
     freeform: function () {
-        return Array.apply(null, Array(10)).map(_ => generateLine({}).line);
+        return Array.apply(null, Array(10)).map(_ => forceGenerateLine({}).line);
     },
 
     haiku: function () {
-        return [generateLine({ syllables: 5 }).line, generateLine({ syllables: 7 }).line, generateLine({ syllables: 5 }).line];
+        return [forceGenerateLine({ syllables: 5 }).line, forceGenerateLine({ syllables: 7 }).line, forceGenerateLine({ syllables: 5 }).line];
     },
 
     iambicPentameter: function () {
-        return Array.apply(null, Array(10)).map(_ => generateLine({ syllables: 10, requireIambic: true }).line);
+        return Array.apply(null, Array(10)).map(_ => forceGenerateLine({ syllables: 10, requireIambic: true }).line);
     },
 
     sonnet: function () {
         function generateRhyme() {
-            var rhymePossibilities = Object.keys(window.rhymes).filter(x => window.rhymes[x].filter(y => checkIambic(y, true)).length >= 2);
-            var chosenRhyme = window.rhymes[randomElement(rhymePossibilities)].filter(x => checkIambic(x, true));
-            var word1 = randomElement(chosenRhyme);
-            chosenRhyme.splice(chosenRhyme.indexOf(word1), 1);
-            var word2 = randomElement(chosenRhyme);
-            var constraints = {
-                syllables: 10,
-                requireIambic: true,
-                reversed: true
-            };
-            return [ generateLine(Object.assign({}, constraints, { startWord: word1 })), generateLine(Object.assign({}, constraints, { startWord: word2 })) ];
+            return forceFunction(() => {
+                var rhymePossibilities = Object.keys(window.rhymes).filter(x => window.rhymes[x].filter(y => checkIambic(y, true)).length >= 2);
+                var chosenRhyme = window.rhymes[randomElement(rhymePossibilities)].filter(x => checkIambic(x, true));
+                var word1 = randomElement(chosenRhyme);
+                chosenRhyme.splice(chosenRhyme.indexOf(word1), 1);
+                var word2 = randomElement(chosenRhyme);
+                var line1 = forceGenerateLine({ startWord: word1, previous: word1, syllables: 10 - getSyllables(word1), requireIambic: true, reversed: true }, true);
+                var line2 = forceGenerateLine({ startWord: word2, previous: word2, syllables: 10 - getSyllables(word2), requireIambic: true, reversed: true }, true);
+                if (line1 != null && line2 != null) return [line1.line + " " + word1, line2.line + " " + word2];
+            });
         }
 
         var lines = Array.apply(null, Array(5)).map(_ => generateRhyme());
@@ -170,12 +184,12 @@ function generatePoem() {
     // Build rhyme list
     window.rhymes = {};
     var keys = Object.keys(window.chain).filter(x => x != "\n");
-    var stems = keys.map(x => getRhymeStem(x)); 
+    var stems = keys.map(x => getRhymeStem(x));
     for (let i = 0; i < keys.length; i++) {
         if (window.rhymes[stems[i]] == null) window.rhymes[stems[i]] = [];
         window.rhymes[stems[i]].push(keys[i]);
     }
-    
+
     //Generate poem
     var sel = document.getElementById("poemType");
     var func = poemFunctions[sel.options[sel.selectedIndex].text];
