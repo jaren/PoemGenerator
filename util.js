@@ -39,5 +39,12 @@ function buildChain(text, length) {
 }
 
 function reverseChain(chain) {
-    // TODO
+    var reverse = {};
+    for (let key in chain) {
+        for (let follow in chain[key]) {
+            if (reverse[follow] == null) reverse[follow] = {};
+            reverse[follow][key] = chain[key][follow];
+        }
+    }
+    return reverse;
 }
