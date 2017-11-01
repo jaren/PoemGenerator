@@ -25,12 +25,8 @@ function getRhymeStem(word) {
 }
 
 function getRhymes(word) {
-    var lists = window.rhymeLists.filter(x => x.includes(word));
-    var list = [];
-    if (lists.length > 0) {
-        list = lists[0];
-        list.splice(list.indexOf(word), 1);
-    }
+    var list = window.rhymes[getRhymeStem(word)];
+    list.splice(list.indexOf(word), 1);
     return list;
 }
 
