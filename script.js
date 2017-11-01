@@ -10,7 +10,7 @@ function getStresses(word) {
 }
 
 function checkIambic(word, reversed) {
-    // Only works with even syllables
+    // Only valid for even syllables
     var stresses = getStresses(word).map(x => x == 0 ? 0 : 1);
     for (let i = 0; i < stresses.length; i++) {
         if (stresses[i] != (reversed ? i + 1 : i) % 2) return false;
@@ -36,7 +36,7 @@ function forceGenerateLine(constraints, hideAlert) {
     while (line == null) {
         line = generateLine(constraints);
         if (tries++ > window.maxTries) {
-            if (!hideAlert) alert("Poem generation failed, try again? :(");
+            if (!hideAlert) alert("Poem generation failed. You can try again, but the current dataset may not have any matches :(");
             return null;
         }
     }
@@ -49,7 +49,7 @@ function generateLine(constraints) {
         startWord: "",
         syllables: 10,
         requireIambic: false, // Requires syllables
-        rhyme: "cat", // TODO
+        reversed: true
 
         notRoot: false,
         previous: null
@@ -57,6 +57,8 @@ function generateLine(constraints) {
     */
     if (constraints.startWord == null) constraints.startWord = "\n";
     if (constraints.previous == null) constraints.previous = "";
+
+    var chain = constraints.reversed ? window.flippedChain : window.chain;
 
     /* This is a mess... */
     var output = "";
@@ -67,21 +69,27 @@ function generateLine(constraints) {
             output = result.line;
             word = result.lastWord;
         } else {
-            var possibilities = Object.keys(window.chain[constraints.startWord]).filter(x => (x != "\n") && (constraints.requireIambic == null || constraints.requireIambic == false || checkIambic(constraints.previous + " " + x)) && (getSyllables(x) <= constraints.syllables));
+            var possibilities = Object.keys(chain[constraints.startWord]).filter(x => (x != "\n") && (constraints.requireIambic == null || constraints.requireIambic == false || checkIambic(constraints.previous + " " + x)) && (getSyllables(x) <= constraints.syllables));
             if (possibilities.length == 0) return null;
             var currentWord = randomElement(possibilities);
             var syllablesLeft = constraints.syllables && (constraints.syllables - getSyllables(currentWord));
             var next = {};
             if (syllablesLeft !== 0) next = generateLine(Object.assign({}, constraints, { syllables: syllablesLeft, startWord: currentWord, previous: constraints.previous + " " + currentWord }));
             if (next == null) return null;
-            output = currentWord + " " + (next.line || "");
+            if (constraints.reversed)
+                output = (next.line || "") + " " + currentWord;
+            else
+                output = currentWord + " " + (next.line || "");
             word = next.lastWord || currentWord;
         }
     } else {
         for (let count = 0; ; count++) {
-            word = randomWeighted(window.chain[word]);
+            word = randomWeighted(chain[word]);
             if (count > window.maxLineLength || word == "\n") break;
-            output += word + " ";
+            if (constraints.reversed) 
+                output = word + " " + output;
+            else
+                output += word + " ";
         }
     }
 
@@ -106,6 +114,17 @@ var poemFunctions = {
 
     sonnet: function () {
         function generateRhyme() {
+            var rhymePossibilities = Object.keys(window.rhymes).filter(x => window.rhymes[x].filter(y => checkIambic(y, true)).length >= 2);
+            var chosenRhyme = window.rhymes[randomElement(rhymePossibilities)].filter(x => checkIambic(x, true));
+            var word1 = randomElement(chosenRhyme);
+            chosenRhyme.splice(chosenRhyme.indexOf(word1), 1);
+            var word2 = randomElement(chosenRhyme);
+            var constraints = {
+                syllables: 10,
+                requireIambic: true,
+                reversed: true
+            };
+            return [ generateLine(Object.assign({}, constraints, { startWord: word1 })), generateLine(Object.assign({}, constraints, { startWord: word2 })) ];
         }
 
         var lines = Array.apply(null, Array(5)).map(_ => generateRhyme());
