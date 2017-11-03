@@ -52,6 +52,28 @@ function forceGenerateLine(constraints, hideAlert) {
     return forceFunction(() => generateLine(constraints), hideAlert);
 }
 
+function generateMatchedLines(constraints, length) {
+    return forceFunction(() => {
+        var filterFunction = (x => (constraints.syllables ? getSyllables(x) <= constraints.syllables : true ) && (constraints.requireIambic ? checkIambic(x, true) : true));
+        var rhymePossibilities = Object.keys(window.rhymes).filter(x => window.rhymes[x].filter(filterFunction).length >= length);
+        var chosenRhyme = window.rhymes[randomElement(rhymePossibilities)].filter(filterFunction);
+        var lines = [];
+        for (let i = 0; i < length; i++) {
+            let word = randomElement(chosenRhyme);
+            let current = forceGenerateLine(Object.assign({}, constraints, {
+                startWord: word,
+                previous: word,
+                syllables: (constraints.syllables ? constraints.syllables - getSyllables(word) : undefined),
+                reversed: true
+            }), true);
+            if (current == null) return null;
+            lines.push(current.line + " " + word);
+            chosenRhyme.splice(chosenRhyme.indexOf(word), 1);
+        }
+        return lines;
+    });
+}
+
 function generateLine(constraints) {
     /* Format:
     {
@@ -128,25 +150,26 @@ var poemFunctions = {
     },
 
     sonnet: function () {
-        function generateRhyme() {
-            return forceFunction(() => {
-                var rhymePossibilities = Object.keys(window.rhymes).filter(x => window.rhymes[x].filter(y => checkIambic(y, true)).length >= 2);
-                var chosenRhyme = window.rhymes[randomElement(rhymePossibilities)].filter(x => checkIambic(x, true));
-                var word1 = randomElement(chosenRhyme);
-                chosenRhyme.splice(chosenRhyme.indexOf(word1), 1);
-                var word2 = randomElement(chosenRhyme);
-                var line1 = forceGenerateLine({ startWord: word1, previous: word1, syllables: 10 - getSyllables(word1), requireIambic: true, reversed: true }, true);
-                var line2 = forceGenerateLine({ startWord: word2, previous: word2, syllables: 10 - getSyllables(word2), requireIambic: true, reversed: true }, true);
-                if (line1 != null && line2 != null) return [line1.line + " " + word1, line2.line + " " + word2];
-            });
-        }
-
-        var lines = Array.apply(null, Array(7)).map(_ => generateRhyme());
+        var lines = Array.apply(null, Array(7)).map(_ => generateMatchedLines({ syllables: 10, requireIambic: true }, 2));
         return [
             lines[0][0], lines[1][0], lines[0][1], lines[1][1], "", 
             lines[2][0], lines[3][0], lines[2][1], lines[3][1], "",
             lines[4][0], lines[5][0], lines[4][1], lines[5][1], "",
-            lines[6][0], lines[6][1]];
+            lines[6][0], lines[6][1]
+        ];
+    },
+
+    villanelle: function () {
+        var aLines = generateMatchedLines({ syllables: 10 }, 7);
+        var bLines = generateMatchedLines({ syllables: 10 }, 6);
+        return [
+            aLines[0], bLines[0], aLines[1], "",
+            aLines[2], bLines[1], aLines[0], "",
+            aLines[3], bLines[2], aLines[1], "",
+            aLines[4], bLines[3], aLines[0], "",
+            aLines[5], bLines[4], aLines[1], "",
+            aLines[6], bLines[5], aLines[0], aLines[1], ""
+        ];
     }
 };
 
@@ -187,7 +210,7 @@ function init(url) {
 
 function generatePoem() {
     if (!window.ready) {
-        alert("Not ready!")
+        alert("Not ready!");
         return;
     }
     window.chain = window.possibleChains[document.getElementById("markovLength").selectedIndex];
