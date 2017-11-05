@@ -160,8 +160,8 @@ var poemFunctions = {
     },
 
     villanelle: function () {
-        var aLines = generateMatchedLines({ syllables: 10 }, 7);
-        var bLines = generateMatchedLines({ syllables: 10 }, 6);
+        var aLines = generateMatchedLines({ syllables: 10, requireIambic: true }, 7);
+        var bLines = generateMatchedLines({ syllables: 10, requireIambic: true }, 6);
         return [
             aLines[0], bLines[0], aLines[1], "",
             aLines[2], bLines[1], aLines[0], "",
