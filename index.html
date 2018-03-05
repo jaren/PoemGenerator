@@ -10,7 +10,7 @@
     <script src="script.js"></script>
 </head>
 
-<body onload="init('https://gist.githubusercontent.com/arbaliste/b0779f332822e019fd323a6a39338f0a/raw/c2b1ad59e3790f75da87c6249a563345e4b9bdc7/portrait.json')">
+<body>
 
     <script>
       $(document).ready(function() {
@@ -31,6 +31,19 @@
     <main class="container">
         <div class="row center">
             <form>
+                <div class="input-field col s8">
+                    <select id="dataSource">
+                        <option value="https://gist.githubusercontent.com/arbaliste/e10265a47298f38d44c6849f21afa89f/raw/e5ea3f7f177a75869c37a5b4885ba2941a59c440/punishment-p1.json">Crime and Punishment (Part 1, no punctuation)</option>
+                        <option value="https://gist.githubusercontent.com/arbaliste/57142406ef3f8a9ecbaa91fc353e8944/raw/adc418f52e01e04e9420cb79afb557b698da7da8/punishment.json">Crime and Punishment (All parts with punctuation)</option>
+                        <option value="https://gist.githubusercontent.com/arbaliste/b0779f332822e019fd323a6a39338f0a/raw/c2b1ad59e3790f75da87c6249a563345e4b9bdc7/portrait.json">Portrait of the Artist as a Young Man</option>
+                    </select>
+                    <label>Data Source</label>
+                </div>
+                <div class="col s2">
+                    <a class="orange darken-2 btn-large waves-effect waves-light" id="setSource" onclick="init(document.getElementById('dataSource').options[document.getElementById('dataSource').selectedIndex].value)">Set source</a>
+                </div>
+            </form>
+            <form>
                 <div class="input-field col s12">
                     <select id="poemType">
                     </select>
@@ -45,7 +58,7 @@
         </div>
         <div class="row center">
             <div class="col s12">
-                <a class="orange darken-2 btn-large waves-effect waves-light" id="generate" onclick="generatePoem()">You shouldn't see this...</a>
+                <a class="orange darken-2 btn-large waves-effect waves-light" id="generate" onclick="generatePoem()">Choose a source and click "Set source"</a>
             </div>
         </div>
         <div class="row">

@@ -203,7 +203,7 @@ function init(url) {
         })
         .catch(_ => {
             alert("Invalid data!");
-            document.getElementById("generate").innerHTML = "Generate";
+            document.getElementById("generate").innerHTML = "Invalid Data :(";
             window.ready = true;
         });
 }
