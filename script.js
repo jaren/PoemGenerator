@@ -1,6 +1,10 @@
 window.maxLineLength = 100;
 window.maxTries = 10000;
 
+function initFromSource() {
+    init(document.getElementById('dataSource').options[document.getElementById('dataSource').selectedIndex].value);
+}
+
 function splitWord(word) {
     return word.trim().split(" ").filter(x => x.length > 0);
 }
